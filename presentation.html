@@ -1,0 +1,272 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Presentation</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #presentation-container {
+            width: 90%;
+            height: 90%;
+            max-width: 1200px;
+            max-height: 800px;
+            background-color: #fff;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .slide {
+            padding: 60px 80px;
+            flex-grow: 1;
+            display: none; /* Initially hide all slides */
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            animation: fadeIn 0.8s ease-in-out;
+        }
+
+        .slide.active {
+            display: flex; /* Show active slide */
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .slide h1 {
+            font-size: 3.5rem;
+            color: #1a237e;
+            margin-bottom: 10px;
+        }
+
+        .slide h2 {
+            font-size: 2.5rem;
+            color: #283593;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #3f51b5;
+            padding-bottom: 10px;
+        }
+        
+        .slide h3 {
+            font-size: 1.5rem;
+            color: #5c6bc0;
+            margin-bottom: 20px;
+        }
+
+        .slide p, .slide li {
+            font-size: 1.2rem;
+            line-height: 1.6;
+            color: #455a64;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+            text-align: left;
+        }
+
+        li {
+            background: #e8eaf6;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 5px solid #3f51b5;
+        }
+
+        code {
+            background-color: #282c34;
+            color: #abb2bf;
+            padding: 15px;
+            border-radius: 8px;
+            display: block;
+            text-align: left;
+            font-family: "Fira Code", "Courier New", monospace;
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+        }
+
+        #navigation {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .nav-button {
+            padding: 12px 25px;
+            border: none;
+            background-color: #3f51b5;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        .nav-button:hover {
+            background-color: #303f9f;
+            transform: translateY(-2px);
+        }
+        
+        .nav-button:disabled {
+            background-color: #9fa8da;
+            cursor: not-allowed;
+        }
+
+        #slide-counter {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            font-size: 1rem;
+            color: #78909c;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="presentation-container">
+
+        <!-- Slide 1: Title -->
+        <div class="slide active">
+            <h1>Project Setup Guide</h1>
+            <h3>A Full-Stack Application</h3>
+            <p>A comprehensive guide to setting up and running the project.</p>
+        </div>
+
+        <!-- Slide 2: Prerequisites -->
+        <div class="slide">
+            <h2>Prerequisites</h2>
+            <ul>
+                <li><b>Python 3.7+</b> for the backend</li>
+                <li><b>Node.js and npm</b> for the frontend</li>
+                <li><b>Git</b> for version control</li>
+            </ul>
+        </div>
+
+        <!-- Slide 3: Backend Setup Part 1 -->
+        <div class="slide">
+            <h2>Backend Setup: Environment</h2>
+            <p>First, clone the repository and set up a virtual environment.</p>
+            <code># 1. Clone the repository
+git clone &lt;your-repo-url&gt;
+cd &lt;your-repo-directory&gt;
+
+# 2. Create a virtual environment
+python -m venv venv
+
+# 3. Activate the environment
+# On Windows: venv\Scripts\activate
+# On macOS/Linux: source venv/bin/activate</code>
+        </div>
+
+        <!-- Slide 4: Backend Setup Part 2 -->
+        <div class="slide">
+            <h2>Backend Setup: Dependencies & Server</h2>
+            <p>Install the required packages and run the server.</p>
+            <code># 4. Install dependencies
+cd backend
+pip install -r requirements.txt
+
+# 5. Run the backend server
+python main.py</code>
+        </div>
+
+        <!-- Slide 5: Frontend Setup -->
+        <div class="slide">
+            <h2>Frontend Setup</h2>
+            <p>Install dependencies and start the development server.</p>
+            <code># Open a new terminal
+cd &lt;your-repo-directory&gt;
+cd frontend
+
+# Install dependencies
+npm install
+
+# Run the development server
+npm run dev</code>
+        </div>
+
+        <!-- Slide 6: Thank You -->
+        <div class="slide">
+            <h1>Thank You!</h1>
+            <h3>Questions?</h3>
+        </div>
+
+        <div id="navigation">
+            <button id="prev" class="nav-button">Previous</button>
+            <button id="next" class="nav-button">Next</button>
+        </div>
+        <div id="slide-counter"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const slides = document.querySelectorAll('.slide');
+            const nextButton = document.getElementById('next');
+            const prevButton = document.getElementById('prev');
+            const slideCounter = document.getElementById('slide-counter');
+            let currentSlide = 0;
+
+            function showSlide(index) {
+                slides.forEach((slide, i) => {
+                    slide.classList.toggle('active', i === index);
+                });
+                // Update slide counter
+                slideCounter.textContent = `${index + 1} / ${slides.length}`;
+                // Update button states
+                prevButton.disabled = index === 0;
+                nextButton.disabled = index === slides.length - 1;
+            }
+
+            nextButton.addEventListener('click', () => {
+                if (currentSlide < slides.length - 1) {
+                    currentSlide++;
+                    showSlide(currentSlide);
+                }
+            });
+
+            prevButton.addEventListener('click', () => {
+                if (currentSlide > 0) {
+                    currentSlide--;
+                    showSlide(currentSlide);
+                }
+            });
+            
+            // Keyboard navigation
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowRight') {
+                    nextButton.click();
+                }
+                if (e.key === 'ArrowLeft') {
+                    prevButton.click();
+                }
+            });
+
+            // Initial setup
+            showSlide(currentSlide);
+        });
+    </script>
+
+</body>
+</html>
