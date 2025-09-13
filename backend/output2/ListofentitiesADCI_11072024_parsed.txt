@@ -1,0 +1,22 @@
+
+--- Page 1 ---
+List of entities having arrangements with Authorised Dealer Category-I banks under Para 10 of FED ‘Master Direction –
+Miscellaneous’ (as on August 31, 2024)
+Name of Authorised Dealer
+Sr. No. Name of the Non-Bank Entity
+Category-I bank
+1. Western Union Financial Services Yes Bank
+2. Remitly Inc. Yes Bank
+3. Convera UK Ltd. (earlier known as Custom House Financial (UK) Ltd.) Barclays
+4. Wise Payment Ltd. (earlier known as TransferWise) RBL Bank
+5. Flywire Payments Corporation Deutsche Bank
+6. Remitbee Inc., Canada Yes Bank
+7. SimbaPay Ltd., UK Yes Bank
+8. Terra Payment Service (UK) Ltd Yes Bank
+9. Wise Payments Ltd. (earlier known as TransferWise) Barclays
+10. Wirepayer Ltd. Barclays
+11. MTFX Inc., Canada Barclays
+12. Visa Payments Ltd. (erstwhile Earthport Plc) Axis Bank
+13. Revolut Forex India Pvt. Ltd. (earlier known as Arvog Forex Pvt. Ltd.) RBL Bank
+14. Nium India Pvt. Ltd. RBL Bank
+15. Visa Payment Limited Yes Bank

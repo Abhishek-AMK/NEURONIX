@@ -1,0 +1,61 @@
+2025-09-13 19:15:42,599 | INFO | MainThread | Pipeline backend starting up.
+2025-09-13 19:15:42,606 | INFO | MainThread | Starting Flask app on http://0.0.0.0:5000
+2025-09-13 19:15:42,633 | INFO | MainThread | [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.79.137.216:5000
+2025-09-13 19:15:42,633 | INFO | MainThread | [33mPress CTRL+C to quit[0m
+2025-09-13 19:18:16,060 | INFO | Thread-1 (process_request_thread) | 127.0.0.1 - - [13/Sep/2025 19:18:16] "OPTIONS /api/pipeline/execute HTTP/1.1" 200 -
+2025-09-13 19:18:16,321 | INFO | Thread-2 (process_request_thread) | API: Received pipeline execution request. ID: a15ceea2-2691-4f74-b588-cab453ce66c1
+2025-09-13 19:18:16,324 | INFO | Pipeline-a15ceea2 | PIPELINE_WORKER (a15ceea2-2691-4f74-b588-cab453ce66c1): Thread started.
+2025-09-13 19:18:16,326 | INFO | Thread-2 (process_request_thread) | 127.0.0.1 - - [13/Sep/2025 19:18:16] "POST /api/pipeline/execute HTTP/1.1" 200 -
+2025-09-13 19:18:16,327 | INFO | Pipeline-a15ceea2 | Cleaning up output folders and URL file before pipeline run.
+2025-09-13 19:18:16,354 | INFO | Pipeline-a15ceea2 | DEBUG: Received 1 modules for execution order
+2025-09-13 19:18:16,354 | INFO | Pipeline-a15ceea2 | DEBUG: Module 0: {'id': 'scrape', 'type': 'scrape', 'parameters': {'urls_file': 'scripts/scraping/urls.txt', 'output_dir': 'Justlit-dir', 'delay': 1}}
+2025-09-13 19:18:16,355 | INFO | Pipeline-a15ceea2 | Execution order determined: ['scrape']
+2025-09-13 19:18:16,356 | INFO | Pipeline-a15ceea2 | PIPELINE_WORKER (a15ceea2-2691-4f74-b588-cab453ce66c1): Scrape module needs URL input.
+2025-09-13 19:18:17,346 | INFO | Thread-3 (process_request_thread) | 127.0.0.1 - - [13/Sep/2025 19:18:17] "GET /api/pipeline/status/a15ceea2-2691-4f74-b588-cab453ce66c1 HTTP/1.1" 200 -
+2025-09-13 19:18:18,660 | INFO | Thread-4 (process_request_thread) | 127.0.0.1 - - [13/Sep/2025 19:18:18] "GET /api/pipeline/status/a15ceea2-2691-4f74-b588-cab453ce66c1 HTTP/1.1" 200 -
+2025-09-13 19:18:19,344 | INFO | Thread-5 (process_request_thread) | 127.0.0.1 - - [13/Sep/2025 19:18:19] "GET /api/pipeline/status/a15ceea2-2691-4f74-b588-cab453ce66c1 HTTP/1.1" 200 -
+2025-09-13 19:18:20,651 | INFO | Thread-6 (process_request_thread) | 127.0.0.1 - - [13/Sep/2025 19:18:20] "GET /api/pipeline/status/a15ceea2-2691-4f74-b588-cab453ce66c1 HTTP/1.1" 200 -
+2025-09-13 19:18:21,342 | INFO | Thread-7 (process_request_thread) | 127.0.0.1 - - [13/Sep/2025 19:18:21] "GET /api/pipeline/status/a15ceea2-2691-4f74-b588-cab453ce66c1 HTTP/1.1" 200 -
+2025-09-13 19:18:22,653 | INFO | Thread-8 (process_request_thread) | 127.0.0.1 - - [13/Sep/2025 19:18:22] "GET /api/pipeline/status/a15ceea2-2691-4f74-b588-cab453ce66c1 HTTP/1.1" 200 -
+2025-09-13 19:18:23,339 | INFO | Thread-9 (process_request_thread) | 127.0.0.1 - - [13/Sep/2025 19:18:23] "GET /api/pipeline/status/a15ceea2-2691-4f74-b588-cab453ce66c1 HTTP/1.1" 200 -
+2025-09-13 19:30:41,118 | INFO | Thread-10 (process_request_thread) | 127.0.0.1 - - [13/Sep/2025 19:30:41] "OPTIONS /api/pipeline/execute HTTP/1.1" 200 -
+2025-09-13 19:30:41,379 | INFO | Thread-11 (process_request_thread) | API: Received pipeline execution request. ID: 5dd655be-e4dd-4d2a-8de6-943980f162ad
+2025-09-13 19:30:41,381 | INFO | Pipeline-5dd655be | PIPELINE_WORKER (5dd655be-e4dd-4d2a-8de6-943980f162ad): Thread started.
+2025-09-13 19:30:41,383 | INFO | Thread-11 (process_request_thread) | 127.0.0.1 - - [13/Sep/2025 19:30:41] "POST /api/pipeline/execute HTTP/1.1" 200 -
+2025-09-13 19:30:41,383 | INFO | Pipeline-5dd655be | Cleaning up output folders and URL file before pipeline run.
+2025-09-13 19:30:41,414 | INFO | Pipeline-5dd655be | DEBUG: Received 1 modules for execution order
+2025-09-13 19:30:41,415 | INFO | Pipeline-5dd655be | DEBUG: Module 0: {'id': 'parse_pdf', 'type': 'parse_pdf', 'parameters': {'input_dir': 'Justlit-dir/downloads/pdf', 'output_dir': 'output2', 'encoding': 'utf-8'}}
+2025-09-13 19:30:41,417 | INFO | Pipeline-5dd655be | Execution order determined: ['parse_pdf']
+2025-09-13 19:30:41,418 | INFO | Pipeline-5dd655be | Looking for script at: C:\Users\Abcom\Desktop\Foundry\Foundry\scripts\ingest\parsers\parse_pdf.py
+2025-09-13 19:30:41,419 | INFO | Pipeline-5dd655be | Running script: parse_pdf.py with params: {'input_dir': 'Justlit-dir/downloads/pdf', 'output_dir': 'output2', 'encoding': 'utf-8'}
+2025-09-13 19:30:42,395 | INFO | Thread-12 (process_request_thread) | 127.0.0.1 - - [13/Sep/2025 19:30:42] "GET /api/pipeline/status/5dd655be-e4dd-4d2a-8de6-943980f162ad HTTP/1.1" 200 -
+2025-09-13 19:30:43,703 | INFO | Thread-15 (process_request_thread) | 127.0.0.1 - - [13/Sep/2025 19:30:43] "GET /api/pipeline/status/5dd655be-e4dd-4d2a-8de6-943980f162ad HTTP/1.1" 200 -
+2025-09-13 19:30:44,397 | INFO | Thread-16 (process_request_thread) | 127.0.0.1 - - [13/Sep/2025 19:30:44] "GET /api/pipeline/status/5dd655be-e4dd-4d2a-8de6-943980f162ad HTTP/1.1" 200 -
+2025-09-13 19:30:45,695 | INFO | Thread-17 (process_request_thread) | 127.0.0.1 - - [13/Sep/2025 19:30:45] "GET /api/pipeline/status/5dd655be-e4dd-4d2a-8de6-943980f162ad HTTP/1.1" 200 -
+2025-09-13 19:30:46,401 | INFO | Thread-18 (process_request_thread) | 127.0.0.1 - - [13/Sep/2025 19:30:46] "GET /api/pipeline/status/5dd655be-e4dd-4d2a-8de6-943980f162ad HTTP/1.1" 200 -
+2025-09-13 19:30:47,709 | INFO | Thread-19 (process_request_thread) | 127.0.0.1 - - [13/Sep/2025 19:30:47] "GET /api/pipeline/status/5dd655be-e4dd-4d2a-8de6-943980f162ad HTTP/1.1" 200 -
+2025-09-13 19:30:48,394 | INFO | Thread-20 (process_request_thread) | 127.0.0.1 - - [13/Sep/2025 19:30:48] "GET /api/pipeline/status/5dd655be-e4dd-4d2a-8de6-943980f162ad HTTP/1.1" 200 -
+2025-09-13 19:30:49,717 | INFO | Thread-21 (process_request_thread) | 127.0.0.1 - - [13/Sep/2025 19:30:49] "GET /api/pipeline/status/5dd655be-e4dd-4d2a-8de6-943980f162ad HTTP/1.1" 200 -
+2025-09-13 19:30:50,400 | INFO | Thread-22 (process_request_thread) | 127.0.0.1 - - [13/Sep/2025 19:30:50] "GET /api/pipeline/status/5dd655be-e4dd-4d2a-8de6-943980f162ad HTTP/1.1" 200 -
+2025-09-13 19:30:51,712 | INFO | Thread-23 (process_request_thread) | 127.0.0.1 - - [13/Sep/2025 19:30:51] "GET /api/pipeline/status/5dd655be-e4dd-4d2a-8de6-943980f162ad HTTP/1.1" 200 -
+2025-09-13 19:30:52,400 | INFO | Thread-24 (process_request_thread) | 127.0.0.1 - - [13/Sep/2025 19:30:52] "GET /api/pipeline/status/5dd655be-e4dd-4d2a-8de6-943980f162ad HTTP/1.1" 200 -
+2025-09-13 19:30:53,717 | INFO | Thread-25 (process_request_thread) | 127.0.0.1 - - [13/Sep/2025 19:30:53] "GET /api/pipeline/status/5dd655be-e4dd-4d2a-8de6-943980f162ad HTTP/1.1" 200 -
+2025-09-13 19:30:54,399 | INFO | Thread-26 (process_request_thread) | 127.0.0.1 - - [13/Sep/2025 19:30:54] "GET /api/pipeline/status/5dd655be-e4dd-4d2a-8de6-943980f162ad HTTP/1.1" 200 -
+2025-09-13 19:30:55,714 | INFO | Thread-27 (process_request_thread) | 127.0.0.1 - - [13/Sep/2025 19:30:55] "GET /api/pipeline/status/5dd655be-e4dd-4d2a-8de6-943980f162ad HTTP/1.1" 200 -
+2025-09-13 19:30:56,398 | INFO | Thread-28 (process_request_thread) | 127.0.0.1 - - [13/Sep/2025 19:30:56] "GET /api/pipeline/status/5dd655be-e4dd-4d2a-8de6-943980f162ad HTTP/1.1" 200 -
+2025-09-13 19:30:57,708 | INFO | Thread-29 (process_request_thread) | 127.0.0.1 - - [13/Sep/2025 19:30:57] "GET /api/pipeline/status/5dd655be-e4dd-4d2a-8de6-943980f162ad HTTP/1.1" 200 -
+2025-09-13 19:30:58,397 | INFO | Thread-30 (process_request_thread) | 127.0.0.1 - - [13/Sep/2025 19:30:58] "GET /api/pipeline/status/5dd655be-e4dd-4d2a-8de6-943980f162ad HTTP/1.1" 200 -
+2025-09-13 19:30:59,701 | INFO | Thread-31 (process_request_thread) | 127.0.0.1 - - [13/Sep/2025 19:30:59] "GET /api/pipeline/status/5dd655be-e4dd-4d2a-8de6-943980f162ad HTTP/1.1" 200 -
+2025-09-13 19:31:00,400 | INFO | Thread-32 (process_request_thread) | 127.0.0.1 - - [13/Sep/2025 19:31:00] "GET /api/pipeline/status/5dd655be-e4dd-4d2a-8de6-943980f162ad HTTP/1.1" 200 -
+2025-09-13 19:31:01,708 | INFO | Thread-33 (process_request_thread) | 127.0.0.1 - - [13/Sep/2025 19:31:01] "GET /api/pipeline/status/5dd655be-e4dd-4d2a-8de6-943980f162ad HTTP/1.1" 200 -
+2025-09-13 19:31:02,394 | INFO | Thread-34 (process_request_thread) | 127.0.0.1 - - [13/Sep/2025 19:31:02] "GET /api/pipeline/status/5dd655be-e4dd-4d2a-8de6-943980f162ad HTTP/1.1" 200 -
+2025-09-13 19:31:03,697 | INFO | Thread-35 (process_request_thread) | 127.0.0.1 - - [13/Sep/2025 19:31:03] "GET /api/pipeline/status/5dd655be-e4dd-4d2a-8de6-943980f162ad HTTP/1.1" 200 -
+2025-09-13 19:31:04,398 | INFO | Thread-36 (process_request_thread) | 127.0.0.1 - - [13/Sep/2025 19:31:04] "GET /api/pipeline/status/5dd655be-e4dd-4d2a-8de6-943980f162ad HTTP/1.1" 200 -
+2025-09-13 19:31:04,435 | INFO | Pipeline-5dd655be | Script parse_pdf.py finished in 23.02s with code 0.
+2025-09-13 19:31:04,435 | INFO | Pipeline-5dd655be | PIPELINE_WORKER (5dd655be-e4dd-4d2a-8de6-943980f162ad): Pipeline completed successfully.
+2025-09-13 19:31:05,702 | INFO | Thread-37 (process_request_thread) | 127.0.0.1 - - [13/Sep/2025 19:31:05] "GET /api/pipeline/status/5dd655be-e4dd-4d2a-8de6-943980f162ad HTTP/1.1" 200 -
+2025-09-13 19:31:05,967 | INFO | Thread-38 (process_request_thread) | API: Final results requested for pipeline 5dd655be-e4dd-4d2a-8de6-943980f162ad.
+2025-09-13 19:31:05,970 | INFO | Thread-38 (process_request_thread) | 127.0.0.1 - - [13/Sep/2025 19:31:05] "GET /api/pipeline/results/5dd655be-e4dd-4d2a-8de6-943980f162ad HTTP/1.1" 200 -
