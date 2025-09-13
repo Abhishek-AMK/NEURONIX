@@ -1,0 +1,22 @@
+Keywords extracted from: YAKE_Keyword_Report.pdf
+==================================================
+ 1. text
+ 2. yake
+ 3. keywords
+ 4. filepath
+ 5. file
+ 6. keyword
+ 7. def
+ 8. json
+ 9. import
+10. txt
+11. extraction
+12. pdf
+13. terms
+14. csv
+15. return
+16. ext
+17. path
+18. output
+19. extractyakekeywords
+20. cleaning

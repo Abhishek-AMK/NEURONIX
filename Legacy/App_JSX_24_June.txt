@@ -1,0 +1,861 @@
+import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
+import './App.css';
+
+const API_BASE_URL = 'http://192.168.30.74:5000/api';
+
+// --- RAG Modal Component ---
+const RagModal = ({ 
+  ragQuestion, 
+  setRagQuestion, 
+  ragAnswer, 
+  handleRagQuestionSubmit, 
+  setRagModalOpen, 
+  isTyping 
+}) => {
+  return (
+    <div className="rag-modal-backdrop">
+      <div className="rag-terminal-modal">
+        <div className="rag-terminal-header">
+          <span className="rag-terminal-dot red"></span>
+          <span className="rag-terminal-dot yellow"></span>
+          <span className="rag-terminal-dot green"></span>
+          <span className="rag-terminal-title">RAG Query Terminal</span>
+        </div>
+        
+        <div className="rag-terminal-content">
+          {/* Only show question input if no answer is available */}
+          {!ragAnswer && (
+            <>
+              <div className="terminal-question-bar">
+                <span className="prompt-arrow">➤</span> Enter your question:
+              </div>
+              
+              <form onSubmit={handleRagQuestionSubmit}>
+                <div className="rag-terminal-input-wrap">
+                  <input
+                    type="text"
+                    className="rag-terminal-input"
+                    value={ragQuestion}
+                    onChange={(e) => setRagQuestion(e.target.value)}
+                    placeholder="Type your question here..."
+                    disabled={isTyping}
+                    autoFocus
+                  />
+                  <button 
+                    type="submit"
+                    className="ask-btn"
+                    disabled={!ragQuestion.trim() || isTyping}
+                  >
+                    {isTyping ? 'Processing...' : 'Ask'}
+                  </button>
+                </div>
+              </form>
+            </>
+          )}
+          
+          {/* Only show answer section when answer is available */}
+          {ragAnswer && (
+            <div className="terminal-answer-section">
+              <div className="terminal-question-bar">
+                <span className="prompt-arrow">➤</span> Answer:
+              </div>
+              <div className="terminal-answer">
+                {ragAnswer}
+              </div>
+            </div>
+          )}
+          
+          <button 
+            type="button"
+            className="close-btn"
+            onClick={() => setRagModalOpen(false)}
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- Topological Order Helper ---
+function getExecutionOrder(modules, connections) {
+  const idToModule = Object.fromEntries(modules.map(m => [m.id, m]));
+  const adj = {};
+  modules.forEach(m => adj[m.id] = []);
+  connections.forEach(c => {
+    adj[c.from].push(c.to);
+  });
+
+  const inDegree = {};
+  modules.forEach(m => inDegree[m.id] = 0);
+  connections.forEach(c => { inDegree[c.to] += 1; });
+
+  const order = [];
+  const queue = modules.filter(m => inDegree[m.id] === 0).map(m => m.id);
+
+  while (queue.length > 0) {
+    const curr = queue.shift();
+    order.push(curr);
+    for (const neighbor of adj[curr]) {
+      inDegree[neighbor]--;
+      if (inDegree[neighbor] === 0) {
+        queue.push(neighbor);
+      }
+    }
+  }
+
+  return order.map(id => idToModule[id]).filter(Boolean);
+}
+
+// -------------------------
+// Main Workflow Component
+// -------------------------
+const RAGPipelineWorkflow = () => {
+  // Pipeline State
+  const [modules, setModules] = useState([]);
+  const [connections, setConnections] = useState([]);
+  const [mode, setMode] = useState('select');
+  const [connectingFrom, setConnectingFrom] = useState(null);
+  const [draggedModule, setDraggedModule] = useState(null);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [resizingModule, setResizingModule] = useState(null);
+  const canvasRef = useRef(null);
+
+  // Pipeline execution state
+  const [pipelineStatus, setPipelineStatus] = useState(null);
+  const [pipelineId, setPipelineId] = useState(null);
+  const [moduleStatuses, setModuleStatuses] = useState({});
+  const [executionResults, setExecutionResults] = useState(null);
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [executionError, setExecutionError] = useState(null);
+  const statusIntervalRef = useRef(null);
+
+  // --- RAG Modal UI State (kept always local, never reset by pipeline logic) ---
+  const [ragModalOpen, setRagModalOpen] = useState(false);
+  const [ragQuestion, setRagQuestion] = useState('');
+  const [ragAnswer, setRagAnswer] = useState('');
+  const [pendingRagModule, setPendingRagModule] = useState(null);
+  const [isTyping, setIsTyping] = useState(false);
+  const [processedWaitingModules, setProcessedWaitingModules] = useState(new Set());
+
+  // Module Templates
+  const moduleTemplates = [
+    {
+      id: 'scrape',
+      name: 'Scrape',
+      category: 'INPUT',
+      icon: '🌐',
+      description: 'Web scraping from URLs',
+      script: 'scripts/scraping/scraping2.py',
+      inputSource: 'scripts/scraping/urls.txt',
+      outputPath: 'Justlit-dir',
+      parameters: {
+        urls_file: { value: 'scripts/scraping/urls.txt', type: 'string', required: true },
+        output_dir: { value: 'Justlit-dir', type: 'string', required: true },
+        delay: { value: 1, type: 'number', required: false }
+      }
+    },
+    {
+      id: 'parse_pdf',
+      name: 'Parse PDF',
+      category: 'PARSER',
+      icon: '📄',
+      description: 'Extract text from PDF files',
+      script: 'scripts/ingest/parsers/parse_pdf.py',
+      inputSource: 'Justlit-dir/downloads/pdf',
+      outputPath: 'output2',
+      parameters: {
+        input_dir: { value: 'Justlit-dir/downloads/pdf', type: 'string', required: true },
+        output_dir: { value: 'output2', type: 'string', required: true },
+        encoding: { value: 'utf-8', type: 'string', required: false }
+      }
+    },
+    {
+      id: 'parse_csv',
+      name: 'Parse CSV',
+      category: 'PARSER',
+      icon: '📊',
+      description: 'Extract text from CSV files',
+      script: 'scripts/ingest/parsers/parse_csv.py',
+      inputSource: 'Justlit-dir/downloads/csv',
+      outputPath: 'output2',
+      parameters: {
+        input_dir: { value: 'Justlit-dir/downloads/csv', type: 'string', required: true },
+        output_dir: { value: 'output2', type: 'string', required: true },
+        delimiter: { value: ',', type: 'string', required: false }
+      }
+    },
+    {
+      id: 'parse_excel',
+      name: 'Parse Excel',
+      category: 'PARSER',
+      icon: '📈',
+      description: 'Extract text from Excel files',
+      script: 'scripts/ingest/parsers/parse_excel.py',
+      inputSource: 'Justlit-dir/downloads/excel',
+      outputPath: 'output2',
+      parameters: {
+        input_dir: { value: 'Justlit-dir/downloads/excel', type: 'string', required: true },
+        output_dir: { value: 'output2', type: 'string', required: true },
+        sheet_name: { value: 0, type: 'number', required: false }
+      }
+    },
+    {
+      id: 'parse_json',
+      name: 'Parse JSON',
+      category: 'PARSER',
+      icon: '🔧',
+      description: 'Extract text from JSON files',
+      script: 'scripts/ingest/parsers/parse_json.py',
+      inputSource: 'Justlit-dir/downloads/json',
+      outputPath: 'output2',
+      parameters: {
+        input_dir: { value: 'Justlit-dir/downloads/json', type: 'string', required: true },
+        output_dir: { value: 'output2', type: 'string', required: true },
+        json_path: { value: '$.content', type: 'string', required: false }
+      }
+    },
+    {
+      id: 'parse_docx',
+      name: 'Parse DOCX',
+      category: 'PARSER',
+      icon: '📝',
+      description: 'Extract text from DOCX files',
+      script: 'scripts/ingest/parsers/parse_docx.py',
+      inputSource: 'Justlit-dir/downloads/docx',
+      outputPath: 'output2',
+      parameters: {
+        input_dir: { value: 'Justlit-dir/downloads/docx', type: 'string', required: true },
+        output_dir: { value: 'output2', type: 'string', required: true },
+        preserve_formatting: { value: false, type: 'boolean', required: false }
+      }
+    },
+    {
+      id: 'parse_text',
+      name: 'Parse Text',
+      category: 'PARSER',
+      icon: '📄',
+      description: 'Extract text from Text files',
+      script: 'scripts/ingest/parsers/parse_text.py',
+      inputSource: 'Justlit-dir/downloads/text',
+      outputPath: 'output2',
+      parameters: {
+        input_dir: { value: 'Justlit-dir/downloads/text', type: 'string', required: true },
+        output_dir: { value: 'output2', type: 'string', required: true },
+        encoding: { value: 'utf-8', type: 'string', required: false }
+      }
+    },
+    {
+      id: 'chunk_texts',
+      name: 'Chunk Texts',
+      category: 'PROCESSING',
+      icon: '✂️',
+      description: 'Split texts into chunks',
+      script: 'scripts/rag2/chunking.py',
+      inputSource: 'output2',
+      outputPath: 'chunked',
+      parameters: {
+        input_dir: { value: 'output2', type: 'string', required: true },
+        output_dir: { value: 'chunked', type: 'string', required: true },
+        chunk_size: { value: 1000, type: 'number', required: true },
+        overlap: { value: 200, type: 'number', required: false }
+      }
+    },
+    {
+      id: 'embed_store',
+      name: 'Embed and Store',
+      category: 'PROCESSING',
+      icon: '🔮',
+      description: 'Generate embeddings and store',
+      script: 'scripts/rag2/embedding.py',
+      inputSource: 'chunked',
+      outputPath: 'vector_db',
+      parameters: {
+        input_dir: { value: 'chunked', type: 'string', required: true },
+        vector_db_path: { value: 'vector_db', type: 'string', required: true },
+        model_name: { value: 'sentence-transformers/all-MiniLM-L6-v2', type: 'string', required: true },
+        batch_size: { value: 32, type: 'number', required: false }
+      }
+    },
+    {
+      id: 'rag_query',
+      name: 'RAG Query',
+      category: 'OUTPUT',
+      icon: '🤖',
+      description: 'Interactive RAG querying',
+      script: 'scripts/rag2/rag_query.py',
+      inputSource: 'vector_db',
+      outputPath: 'query_results',
+      parameters: {
+        vector_db_path: { value: 'vector_db', type: 'string', required: true },
+        output_dir: { value: 'query_results', type: 'string', required: true },
+        top_k: { value: 5, type: 'number', required: true },
+        temperature: { value: 0.7, type: 'number', required: false },
+        question: { value: '', type: 'string', required: true }
+      }
+    },
+  ];
+
+  // Group templates by category
+  const groupedTemplates = useMemo(() => {
+    return moduleTemplates.reduce((acc, template) => {
+      const category = template.category;
+      if (!acc[category]) acc[category] = [];
+      acc[category].push(template);
+      return acc;
+    }, {});
+  }, []);
+
+  // Clean up polling on unmount
+  useEffect(() => {
+    return () => {
+      if (statusIntervalRef.current) clearInterval(statusIntervalRef.current);
+    };
+  }, []);
+
+  // ----
+  // Detect if we need to pop the RAG modal
+  // ----
+  useEffect(() => {
+    if (!moduleStatuses || !pipelineId) return;
+    
+    // Check if any module is waiting for input
+    const waitingModuleEntry = Object.entries(moduleStatuses).find(([moduleId, status]) => {
+      return status.status === 'waiting_for_input';
+    });
+    
+    if (waitingModuleEntry && !ragModalOpen) {
+      const [moduleId, status] = waitingModuleEntry;
+      
+      // Check if we've already processed this module
+      if (processedWaitingModules.has(moduleId)) {
+        return;
+      }
+      
+      const module = modules.find(m => m.id === moduleId);
+      
+      if (module && module.moduleType === 'rag_query') {
+        setRagModalOpen(true);
+        setPendingRagModule(moduleId);
+        setRagQuestion('');
+        setRagAnswer('');
+        
+        // Mark this module as processed
+        setProcessedWaitingModules(prev => new Set([...prev, moduleId]));
+      }
+    }
+  }, [moduleStatuses, pipelineId, modules, ragModalOpen, processedWaitingModules]);
+
+  // --- RAG Modal Submit (only closes if you submit, NOT on rerender) ---
+  const handleRagQuestionSubmit = async (e) => {
+    if (e) e.preventDefault();
+    
+    if (!ragQuestion.trim()) {
+      alert("Please enter a question");
+      return;
+    }
+
+    try {
+      // Send question to backend
+      const response = await fetch(`${API_BASE_URL}/pipeline/update_question/${pipelineId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: ragQuestion }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update question');
+      }
+
+      // Update local module state
+      setModules(prev =>
+        prev.map(m =>
+          m.id === pendingRagModule
+            ? {
+                ...m,
+                parameters: {
+                  ...m.parameters,
+                  question: {
+                    ...m.parameters.question,
+                    value: ragQuestion
+                  }
+                }
+              }
+            : m
+        )
+      );
+
+      setRagModalOpen(false);
+      setPendingRagModule(null);
+      setIsTyping(false);
+      
+    } catch (error) {
+      setExecutionError(error.message);
+    }
+  };
+
+  // Simplify the main execution function
+  const executePipeline = async () => {
+    if (modules.length === 0) {
+      setExecutionError("Cannot execute: No modules in the pipeline");
+      return;
+    }
+
+    try {
+      setIsExecuting(true);
+      setExecutionError(null);
+      setPipelineStatus("preparing");
+      setProcessedWaitingModules(new Set()); // Clear the processed modules set
+
+      const pipelineModules = getExecutionOrder(modules, connections).map(module => {
+        const params = Object.entries(module.parameters).reduce((acc, [key, param]) => {
+          acc[key] = param.value;
+          return acc;
+        }, {});
+
+        return {
+          id: module.id,
+          type: module.moduleType,
+          parameters: params
+        };
+      });
+
+      const response = await fetch(`${API_BASE_URL}/pipeline/execute`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          modules: pipelineModules,
+          connections: connections
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to execute pipeline');
+      }
+
+      const data = await response.json();
+      setPipelineId(data.pipeline_id);
+      setPipelineStatus(data.status);
+
+      if (statusIntervalRef.current) clearInterval(statusIntervalRef.current);
+      statusIntervalRef.current = setInterval(() => {
+        checkPipelineStatus(data.pipeline_id);
+      }, 1000); // Check more frequently
+
+    } catch (error) {
+      setExecutionError(error.message);
+      setPipelineStatus('failed');
+      setIsExecuting(false);
+    }
+  };
+
+  // --- Polling & Results ---
+  const checkPipelineStatus = async (id) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/pipeline/status/${id}`);
+      if (!response.ok) throw new Error('Failed to fetch pipeline status');
+
+      const data = await response.json();
+      setPipelineStatus(data.status);
+      setModuleStatuses(data.modules || {});
+
+      if (data.status === 'completed' || data.status === 'failed') {
+        clearInterval(statusIntervalRef.current);
+        statusIntervalRef.current = null;
+        setIsExecuting(false);
+        fetchPipelineResults(id);
+      }
+    } catch (error) {
+      setExecutionError(error.message);
+      clearInterval(statusIntervalRef.current);
+      statusIntervalRef.current = null;
+      setIsExecuting(false);
+    }
+  };
+
+  const fetchPipelineResults = async (id) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/pipeline/results/${id}`);
+      if (!response.ok) throw new Error('Failed to fetch pipeline results');
+
+      const data = await response.json();
+      setExecutionResults(data.results);
+
+      // If RAG module present, show answer in modal
+      const ragKey = Object.keys(data.results || {}).find(key =>
+        key.includes('rag_query') || key.toLowerCase().includes('rag')
+      );
+
+      if (ragKey && data.results[ragKey]?.output) {
+        setRagAnswer(data.results[ragKey].output);
+        setRagModalOpen(true);
+      }
+    } catch (error) {
+      setExecutionError(error.message);
+    }
+  };
+
+  // --- UI Dragging/Connecting/Etc ---
+  const addModule = useCallback((template) => {
+    const newModule = {
+      id: `${template.id}_${Date.now()}`,
+      ...template,
+      moduleType: template.id,
+      x: Math.random() * 400 + 400,
+      y: Math.random() * 300 + 200,
+      width: 280,
+      height: 200
+    };
+    setModules(prev => [...prev, newModule]);
+  }, []);
+
+  const handleMouseDown = useCallback((e, moduleId, action = 'drag') => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const module = modules.find(m => m.id === moduleId);
+    if (!module) return;
+
+    if (action === 'resize') {
+      setResizingModule(moduleId);
+      return;
+    }
+
+    if (mode === 'connect') {
+      if (!connectingFrom) setConnectingFrom(moduleId);
+      else if (connectingFrom !== moduleId) {
+        setConnections(prev => [...prev, { id: `${connectingFrom}_${moduleId}_${Date.now()}`, from: connectingFrom, to: moduleId }]);
+        setConnectingFrom(null);
+      }
+      return;
+    }
+
+    if (mode === 'delete') {
+      setModules(prev => prev.filter(m => m.id !== moduleId));
+      setConnections(prev => prev.filter(c => c.from !== moduleId && c.to !== moduleId));
+      return;
+    }
+
+    if (mode === 'select') {
+      const rect = e.currentTarget.getBoundingClientRect();
+      setDragOffset({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+      setDraggedModule(moduleId);
+    }
+  }, [mode, connectingFrom, modules]);
+
+  const handleMouseMove = useCallback((e) => {
+    if (!canvasRef.current) return;
+
+    const canvasRect = canvasRef.current.getBoundingClientRect();
+    const x = e.clientX - canvasRect.left;
+    const y = e.clientY - canvasRect.top;
+
+    if (draggedModule && mode === 'select') {
+      setModules(prev => prev.map(module =>
+        module.id === draggedModule
+          ? {
+              ...module,
+              x: Math.max(0, Math.min(x - dragOffset.x, canvasRect.width - module.width)),
+              y: Math.max(0, Math.min(y - dragOffset.y, canvasRect.height - module.height))
+            }
+          : module
+      ));
+    }
+
+    if (resizingModule) {
+      setModules(prev => prev.map(module =>
+        module.id === resizingModule
+          ? { ...module, width: Math.max(200, x - module.x), height: Math.max(150, y - module.y) }
+          : module
+      ));
+    }
+  }, [draggedModule, resizingModule, mode, dragOffset]);
+
+  const handleMouseUp = useCallback(() => {
+    setDraggedModule(null);
+    setResizingModule(null);
+  }, []);
+
+  const clearAll = useCallback(() => {
+    setModules([]);
+    setConnections([]);
+    setConnectingFrom(null);
+    setPipelineStatus(null);
+    setPipelineId(null);
+    setModuleStatuses({});
+    setExecutionResults(null);
+    setExecutionError(null);
+    if (statusIntervalRef.current) {
+      clearInterval(statusIntervalRef.current);
+      statusIntervalRef.current = null;
+    }
+  }, []);
+
+  const getModuleStatusClass = useCallback((moduleId) => {
+    const status = moduleStatuses[moduleId];
+    if (!status) return '';
+    return `module-${status.status}`;
+  }, [moduleStatuses]);
+
+  const renderConnections = useMemo(() => {
+    return connections.map(connection => {
+      const fromModule = modules.find(m => m.id === connection.from);
+      const toModule = modules.find(m => m.id === connection.to);
+      if (!fromModule || !toModule) return null;
+
+      const fromX = fromModule.x + fromModule.width;
+      const fromY = fromModule.y + fromModule.height / 2;
+      const toX = toModule.x;
+      const toY = toModule.y + toModule.height / 2;
+      const midX = (fromX + toX) / 2;
+
+      const path = `M ${fromX} ${fromY} C ${midX} ${fromY}, ${midX} ${toY}, ${toX} ${toY}`;
+
+      return (
+        <path
+          key={connection.id}
+          d={path}
+          stroke="#ffffff"
+          strokeWidth="2"
+          fill="none"
+          markerEnd="url(#arrowhead)"
+        />
+      );
+    });
+  }, [connections, modules]);
+
+  return (
+    <div className="workflow-container" onMouseMove={handleMouseMove} onMouseUp={handleMouseUp}>
+      {ragModalOpen && (
+        <RagModal 
+          ragQuestion={ragQuestion}
+          setRagQuestion={setRagQuestion}
+          ragAnswer={ragAnswer}
+          handleRagQuestionSubmit={handleRagQuestionSubmit}
+          setRagModalOpen={setRagModalOpen}
+          isTyping={isTyping}
+        />
+      )}
+
+      {/* Sidebar */}
+      <div className="sidebar">
+        <div className="sidebar-header">
+          <span className="sidebar-icon">⚡</span>
+          <h2>Pipeline Modules</h2>
+        </div>
+        {Object.entries(groupedTemplates).map(([category, templates]) => (
+          <div key={category} className="module-category">
+            <h3 className="category-title">• {category}</h3>
+            {templates.map(template => (
+              <div key={template.id} className="module-template">
+                <div className="template-info">
+                  <span className="template-icon">{template.icon}</span>
+                  <div className="template-details">
+                    <h4>{template.name}</h4>
+                    <p>{template.description}</p>
+                    <code>{template.script}</code>
+                  </div>
+                </div>
+                <button
+                  className="add-button"
+                  onClick={() => addModule(template)}
+                >
+                  +
+                </button>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+
+      {/* Main Content */}
+      <div className="main-content">
+        {/* Header */}
+        <div className="header">
+          <div className="header-title">
+            <span className="header-icon">✨</span>
+            <h1>Nuvoro Foundary Blueprint Sample</h1>
+          </div>
+          <div className="toolbar">
+            <button
+              className={`toolbar-btn ${mode === 'select' ? 'active' : ''}`}
+              onClick={() => setMode('select')}
+            >🎯 Select & Move</button>
+            <button
+              className={`toolbar-btn ${mode === 'connect' ? 'active' : ''}`}
+              onClick={() => setMode('connect')}
+            >🔗 Connect Dots</button>
+            <button
+              className={`toolbar-btn ${mode === 'delete' ? 'active' : ''}`}
+              onClick={() => setMode('delete')}
+            >🗑️ Delete</button>
+            <button className="toolbar-btn clear-btn" onClick={clearAll}>Clear All</button>
+            <button
+              className={`toolbar-btn execute-btn ${isExecuting ? 'executing' : ''}`}
+              onClick={executePipeline}
+              disabled={isExecuting || modules.length === 0}
+            >
+              {isExecuting ? '⏳ Executing...' : '▶️ Execute Pipeline'}
+            </button>
+          </div>
+        </div>
+
+        {/* Canvas */}
+        <div className="canvas" ref={canvasRef}>
+          {modules.length === 0 && (
+            <div className="canvas-placeholder">
+              <p>Click modules in the sidebar to add them</p>
+              <p>Use toolbar: Select → Connect Dots → Delete</p>
+            </div>
+          )}
+          <svg className="connections-svg">
+            <defs>
+              <marker id="arrowhead" markerWidth="10" markerHeight="7" 
+                      refX="9" refY="3.5" orient="auto">
+                <polygon points="0 0, 10 3.5, 0 7" fill="#ffffff" />
+              </marker>
+            </defs>
+            {renderConnections}
+          </svg>
+          {modules.map(module => (
+            <div
+              key={module.id}
+              className={`module ${mode === 'connect' && connectingFrom === module.id ? 'connecting' : ''} ${getModuleStatusClass(module.id)}`}
+              style={{
+                left: module.x,
+                top: module.y,
+                width: module.width,
+                height: module.height
+              }}
+              onMouseDown={(e) => handleMouseDown(e, module.id)}
+            >
+              <div className="module-header">
+                <span className="module-icon">{module.icon}</span>
+                <div className="module-title">
+                  <h3>{module.name}</h3>
+                  <span className="module-script">python {module.script}</span>
+                </div>
+              </div>
+              <div className="module-paths">
+                <div className="path-item">
+                  <span className="path-label">Input Source:</span>
+                  <span className="path-value">{module.inputSource}</span>
+                </div>
+                <div className="path-item">
+                  <span className="path-label">Output Path:</span>
+                  <span className="path-value">{module.outputPath}</span>
+                </div>
+              </div>
+              <div className="parameters-list">
+                {Object.entries(module.parameters).map(([key, param]) => (
+                  <div key={key} className="parameter-item">
+                    <span className="parameter-name">{key}:</span>
+                    {param.type === 'string' ? (
+                      <input
+                        type="text"
+                        className="parameter-input"
+                        value={param.value}
+                        onChange={e => {
+                          setModules(prevModules =>
+                            prevModules.map(m =>
+                              m.id === module.id
+                                ? {
+                                    ...m,
+                                    parameters: {
+                                      ...m.parameters,
+                                      [key]: {
+                                        ...param,
+                                        value: e.target.value
+                                      }
+                                    }
+                                  }
+                                : m
+                            )
+                          );
+                        }}
+                      />
+                    ) : (
+                      <span className="parameter-value">{param.value.toString()}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {moduleStatuses[module.id] && (
+                <div className={`module-status ${moduleStatuses[module.id].status}`}>
+                  {moduleStatuses[module.id].status === 'running' && '⏳ '}
+                  {moduleStatuses[module.id].status === 'completed' && '✅ '}
+                  {moduleStatuses[module.id].status === 'failed' && '❌ '}
+                  {moduleStatuses[module.id].message || moduleStatuses[module.id].status}
+                </div>
+              )}
+              <div className="connection-point input-point"></div>
+              <div className="connection-point output-point"></div>
+              <div
+                className="resize-handle"
+                onMouseDown={e => handleMouseDown(e, module.id, 'resize')}
+              ></div>
+            </div>
+          ))}
+        </div>
+
+        {/* Execution Panel */}
+        {(pipelineStatus || executionError) && (
+          <div className={`execution-panel ${pipelineStatus}`}>
+            <div className="execution-header">
+              <h3>
+                {pipelineStatus === 'completed' && '✅ Pipeline Execution Complete'}
+                {pipelineStatus === 'running' && '⏳ Pipeline Executing...'}
+                {pipelineStatus === 'failed' && '❌ Pipeline Execution Failed'}
+                {pipelineStatus === 'pending' && '⏳ Pipeline Preparing...'}
+              </h3>
+              {pipelineId && <div className="pipeline-id">ID: {pipelineId}</div>}
+            </div>
+            {executionError && (
+              <div className="execution-error">Error: {executionError}</div>
+            )}
+            {executionResults && (
+              <div className="execution-results">
+                <h4>Results:</h4>
+                <div className="results-container">
+                  {Object.entries(executionResults).map(([moduleId, result]) => {
+                    const module = modules.find(m => m.id === moduleId);
+                    return (
+                      <div key={moduleId} className="module-result">
+                        <h5>{module ? module.name : moduleId}</h5>
+                        <div className="result-output">
+                          <strong>Output:</strong> {result.output}
+                        </div>
+                        <div className="result-path">
+                          <strong>Output Path:</strong> {result.output_path}
+                        </div>
+                        {result.execution_time && (
+                          <div className="result-time">
+                            <strong>Execution Time:</strong> {result.execution_time.toFixed(2)}s
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        <div className="status-bar">
+          <div>
+            <span>Modules: {modules.length}</span>
+            <span>Connections: {connections.length}</span>
+          </div>
+          <div>
+            {connectingFrom && <span>Connecting from: {modules.find(m => m.id === connectingFrom)?.name}</span>}
+            {pipelineStatus && <span>Pipeline Status: {pipelineStatus}</span>}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default RAGPipelineWorkflow;

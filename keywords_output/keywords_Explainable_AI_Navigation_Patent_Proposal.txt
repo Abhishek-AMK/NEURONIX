@@ -1,0 +1,22 @@
+Keywords extracted from: Explainable_AI_Navigation_Patent_Proposal.pdf
+==================================================
+ 1. phase
+ 2. scene
+ 3. visually
+ 4. explainable
+ 5. navigation
+ 6. language
+ 7. impaired
+ 8. graph
+ 9. patent
+10. depth
+11. proposal
+12. system
+13. generation
+14. object
+15. natural
+16. detection
+17. people
+18. generator
+19. jetson
+20. nano

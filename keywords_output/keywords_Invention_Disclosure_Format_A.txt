@@ -1,0 +1,22 @@
+Keywords extracted from: Invention_Disclosure_Format_A.pdf
+==================================================
+ 1. office
+ 2. vit
+ 3. complete
+ 4. employee
+ 5. gender
+ 6. nationality
+ 7. position
+ 8. department
+ 9. phone
+10. mail
+11. address
+12. full
+13. add
+14. signature
+15. inventor
+16. idf
+17. document
+18. schoolcenter
+19. rows
+20. issue

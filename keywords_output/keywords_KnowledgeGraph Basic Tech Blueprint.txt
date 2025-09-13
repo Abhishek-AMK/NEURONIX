@@ -1,0 +1,22 @@
+Keywords extracted from: KnowledgeGraph Basic Tech Blueprint.pdf
+==================================================
+ 1. store
+ 2. product
+ 3. transaction
+ 4. return
+ 5. supplier
+ 6. status
+ 7. dataissue
+ 8. date
+ 9. contact
+10. data
+11. graph
+12. customer
+13. flag
+14. resolution
+15. entity
+16. cypher
+17. size
+18. description
+19. format
+20. issues
